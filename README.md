@@ -77,8 +77,9 @@ The design and its measurements are in [docs/memory.md](docs/memory.md).
 
 ## Install
 
-You need `bash`, `jq` and `git`. `skill-forge` also needs Python 3.9 or later,
-and `memory-verify.sh` needs `gh` for GitHub checks.
+You need `bash`, `jq` and `git`. `skill-forge` also needs Python 3.10 or later
+with a TOML reader: `tomllib` is built in from 3.11, and 3.10 needs the `tomli`
+package. `memory-verify.sh` needs `gh` for GitHub checks.
 
 ```sh
 git clone https://github.com/seanGSISG/claude-code-harness ~/projects/claude-code-harness

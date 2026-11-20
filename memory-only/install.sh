@@ -52,7 +52,10 @@ if [[ -d "$SRC/.git" ]]; then
 else
   git clone -q "$PIN_URL" "$SRC"
 fi
-git -C "$SRC" -c advice.detachedHead=false checkout -q "$PIN_TAG"
+# The cache belongs to this installer: --force and clean drop any local edit or
+# stray file, so only the pinned release's bytes are ever installed.
+git -C "$SRC" -c advice.detachedHead=false checkout -q --force "$PIN_TAG"
+git -C "$SRC" clean -q -f -d -x
 AT=$(git -C "$SRC" rev-parse HEAD)
 [[ "$AT" == "$PIN_COMMIT" ]] || {
   echo "install: $PIN_TAG of $PIN_URL is $AT, but config/skills.pin says $PIN_COMMIT; skills not installed" >&2
@@ -92,7 +95,7 @@ NEW="$SETTINGS.new.$$"
 trap 'rm -f "$NEW"' EXIT
 cp -p "$SETTINGS" "$NEW"
 jq '
-  def ours: test("/hooks/(memory-lint|memory-lint-stop|memory-session-start|plan-to-html)\\.sh");
+  def ours: test("\\.claude/hooks/(memory-lint|memory-lint-stop|memory-session-start|plan-to-html)\\.sh");
   def cmd($file): {type: "command", command: ("bash \"$HOME/.claude/hooks/" + $file + "\"")};
   .hooks = ((.hooks // {})
     | map_values(map(.hooks |= map(select((.command // "") | ours | not)))

@@ -18,13 +18,17 @@ test:
     bash memory-only/tests/install.test.sh
     for t in memory-lint memory-index memory-verify memory-fix memory-provenance plan-to-html; do bash tests/$t.test.sh || exit 1; done
 
+# Add the upstream remote when it is missing, as in a fresh clone
+_upstream:
+    @git remote get-url upstream >/dev/null 2>&1 || git remote add upstream https://github.com/AdityaRon/claude-code-harness.git
+
 # Fetch upstream and list what changed in the installed files since our last merge
-upstream-diff:
+upstream-diff: _upstream
     git fetch -q upstream
     git diff --stat HEAD upstream/main -- {{installed}}
 
 # Merge upstream main into this branch, keeping our README and our workflow deletions, then test
-sync:
+sync: _upstream
     #!/usr/bin/env bash
     set -euo pipefail
     git fetch -q upstream

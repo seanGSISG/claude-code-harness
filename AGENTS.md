@@ -11,5 +11,8 @@ memory features and plan-to-html, through `memory-only/install.sh`. Read
 - Upstream's workflows are deleted on purpose; `just sync` keeps them deleted.
 - Fix upstream bugs upstream: open an issue or PR on AdityaRon/claude-code-harness.
 - Do not run upstream's `install.sh`: it installs every guard.
-- Remotes: `origin` is the fork, `upstream` is AdityaRon/claude-code-harness.
+- Remotes: `origin` is the fork, `upstream` is AdityaRon/claude-code-harness
+  (`just sync` adds it when missing). With an `upstream` remote, `gh` sends PR
+  commands to AdityaRon's repo: run `gh repo set-default seanGSISG/claude-code-harness`
+  once per clone.
 - Before a push, run `just test`.

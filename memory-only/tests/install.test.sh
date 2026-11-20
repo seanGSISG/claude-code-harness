@@ -20,7 +20,8 @@ cat > "$C/settings.json" <<'JSON'
 {
   "model": "keep-me",
   "hooks": {
-    "PostToolUse": [{"matcher": "Write|Edit|MultiEdit", "hooks": [{"type": "command", "command": "bash \"$HOME/.claude/hooks/memory-lint.sh\""}]}],
+    "PostToolUse": [{"matcher": "Write|Edit|MultiEdit", "hooks": [{"type": "command", "command": "bash \"$HOME/.claude/hooks/memory-lint.sh\""}]},
+                    {"matcher": "Write", "hooks": [{"type": "command", "command": "bash /opt/custom/hooks/memory-lint.sh"}]}],
     "SessionStart": [{"hooks": []}, {"matcher": "^startup$", "hooks": [{"type": "command", "command": "other-hook.sh"}]}]
   }
 }
@@ -50,10 +51,11 @@ for g in audit.sh bash-guards.sh rm-guard.sh session-start.sh; do
   check "upstream hook $g not installed" "[ ! -e '$C/hooks/$g' ]"
 done
 
-check "one memory-lint entry"        "[ \"\$(count memory-lint.sh PostToolUse)\" = 1 ]"
-check "one memory-lint-stop entry"   "[ \"\$(count memory-lint-stop.sh Stop)\" = 1 ]"
-check "one memory-session-start"     "[ \"\$(count memory-session-start.sh SessionStart)\" = 1 ]"
-check "one plan-to-html entry"       "[ \"\$(count plan-to-html.sh PreToolUse)\" = 1 ]"
+check "one memory-lint entry"        "[ \"\$(count .claude/hooks/memory-lint.sh PostToolUse)\" = 1 ]"
+check "one memory-lint-stop entry"   "[ \"\$(count .claude/hooks/memory-lint-stop.sh Stop)\" = 1 ]"
+check "one memory-session-start"     "[ \"\$(count .claude/hooks/memory-session-start.sh SessionStart)\" = 1 ]"
+check "one plan-to-html entry"       "[ \"\$(count .claude/hooks/plan-to-html.sh PreToolUse)\" = 1 ]"
+check "same-named hook elsewhere kept" "[ \"\$(count /opt/custom/hooks/memory-lint.sh PostToolUse)\" = 1 ]"
 check "plan-to-html is async on ExitPlanMode" \
   "[ \"\$(jq -c '[.hooks.PreToolUse[] | select(.matcher == \"ExitPlanMode\") | .hooks[0].async] ' '$C/settings.json')\" = '[true]' ]"
 check "other hook kept"              "[ \"\$(count other-hook.sh SessionStart)\" = 1 ]"
@@ -61,10 +63,16 @@ check "unrelated key kept"           "[ \"\$(jq -r .model '$C/settings.json')\" 
 check "empty group removed"          "[ \"\$(jq '[.hooks[][] | select((.hooks | length) == 0)] | length' '$C/settings.json')\" = 0 ]"
 check "one backup from the first run" "[ \"\$(ls '$C' | grep -c '^settings.json.bak-memory-only-')\" = 1 ]"
 
+# Edit the skills cache before the second run: the release's bytes must win.
+SK="$XDG_CACHE_HOME/claude-code-skills/skills"
+echo "local edit" >> "$SK/memory-audit/SKILL.md"
+touch "$SK/skill-forge/bin/stray.sh"
 before=$(cksum < "$C/settings.json")
 out=$(bash "$FORK/memory-only/install.sh" 2>&1) || { echo "second install failed:"; echo "$out"; exit 1; }
 check "second run leaves settings.json as it was" "[ \"\$(cksum < '$C/settings.json')\" = '$before' ]"
 check "second run makes no backup" "[ \"\$(ls '$C' | grep -c '^settings.json.bak-memory-only-')\" = 1 ]"
+check "a cache edit is not installed" "! grep -q 'local edit' '$C/skills/memory-audit/SKILL.md'"
+check "a stray cache file is not installed" "[ ! -e '$C/skills/skill-forge/bin/stray.sh' ]"
 
 # The installed hooks load their libs and work as a pair: memory-lint records a
 # memory with no index line, and memory-lint-stop reports it at Stop, once.
