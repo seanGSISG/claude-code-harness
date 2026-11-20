@@ -43,6 +43,22 @@ place "$FORK/memory-only/hooks/memory-session-start.sh" "$CLAUDE/hooks/memory-se
 place "$FORK/memory-only/rules/memory-writes.md" "$CLAUDE/rules/memory-writes.md" 644
 echo "  ✓ tools, hooks and libs in $CLAUDE; rule rules/memory-writes.md"
 
+# --- WSL: plan pages open in the Windows default browser ---------------------
+# plan-to-html opens its page with xdg-open, which under WSL picks a Linux
+# browser. Making wslview the xdg default browser (text/html and http/https)
+# hands the page to Windows instead. This is the default for every xdg-open
+# call in WSL, not only plans. A failure here only warns.
+if grep -qi microsoft /proc/version 2>/dev/null && command -v wslview >/dev/null && command -v xdg-settings >/dev/null; then
+  was=$(xdg-settings get default-web-browser 2>/dev/null || true)
+  if [[ "$was" == wslview.desktop ]]; then
+    echo "  ✓ WSL: xdg-open already uses wslview (Windows default browser)"
+  elif xdg-settings set default-web-browser wslview.desktop 2>/dev/null; then
+    echo "  ✓ WSL: xdg-open now uses wslview (Windows default browser); was ${was:-unset}"
+  else
+    echo "  ⚠ WSL: could not make wslview the default browser; plans open with ${was:-the xdg-open default}"
+  fi
+fi
+
 # --- skills: only SKILLS_WANTED, from the pinned claude-code-skills release ---
 pin() { sed -n "s/^$1=//p" "$FORK/config/skills.pin"; }
 PIN_URL=$(pin url) PIN_TAG=$(pin tag) PIN_COMMIT=$(pin commit)

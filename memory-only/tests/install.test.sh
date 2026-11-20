@@ -38,6 +38,9 @@ for f in memory-index.sh memory-verify.sh memory-fix.sh memory-provenance.sh \
   check "$f is installed and executable" "[ -x '$C/$f' ]"
 done
 check "rule installed" "[ -f '$C/rules/memory-writes.md' ]"
+if grep -qi microsoft /proc/version 2>/dev/null && command -v wslview >/dev/null && command -v xdg-settings >/dev/null; then
+  check "WSL: html opens with wslview" "[ \"\$(xdg-mime query default text/html)\" = wslview.desktop ]"
+fi
 for s in memory-audit memory-archive skill-forge; do
   check "skill $s installed" "[ -f '$C/skills/$s/SKILL.md' ]"
 done

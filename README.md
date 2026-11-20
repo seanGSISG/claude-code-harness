@@ -62,8 +62,10 @@ deletes `memory-lint` pending lists that are more than a day old.
 **plan-to-html** writes the plan to `~/.claude/plans-html/plan-<time>.html`
 and opens it with `open` or `xdg-open`. It runs async, so it never delays the
 approval prompt. Set `CLAUDE_PLAN_HTML_NO_OPEN=1` to save the page without
-opening it. On WSL, `xdg-open` uses the Linux default browser. To use the
-Windows browser, run `xdg-settings set default-web-browser wslview.desktop`.
+opening it. On WSL, `just install` makes `wslview` the `xdg` default browser,
+so plans open in the Windows default browser. This changes the default for
+every `xdg-open` call in WSL. The install prints the old value; to undo, run
+`xdg-settings set default-web-browser <old value>`.
 
 **The memory tools:**
 
