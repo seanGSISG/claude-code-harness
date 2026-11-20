@@ -85,8 +85,12 @@ echo "  ✓ skills ${SKILLS_WANTED[*]} ($PIN_TAG)"
 
 # --- settings.json: one entry per installed hook, others left as they are ----
 SETTINGS="$CLAUDE/settings.json"
-[[ -f "$SETTINGS" ]] || echo '{}' > "$SETTINGS"
+[[ -f "$SETTINGS" ]] || (umask 077 && echo '{}' > "$SETTINGS")
+# The new file starts as a copy, so it has settings.json's mode before any
+# merged content is written into it: a private settings.json stays private.
 NEW="$SETTINGS.new.$$"
+trap 'rm -f "$NEW"' EXIT
+cp -p "$SETTINGS" "$NEW"
 jq '
   def ours: test("/hooks/(memory-lint|memory-lint-stop|memory-session-start|plan-to-html)\\.sh");
   def cmd($file): {type: "command", command: ("bash \"$HOME/.claude/hooks/" + $file + "\"")};
@@ -105,7 +109,6 @@ if cmp -s <(jq -S . "$SETTINGS") <(jq -S . "$NEW"); then
 else
   BACKUP="$SETTINGS.bak-memory-only-$(date +%Y%m%d%H%M%S)"
   cp -p "$SETTINGS" "$BACKUP"
-  chmod --reference="$SETTINGS" "$NEW" 2>/dev/null || true
   mv -f "$NEW" "$SETTINGS"
   echo "  ✓ settings.json (hooks merged; backup: $BACKUP)"
 fi

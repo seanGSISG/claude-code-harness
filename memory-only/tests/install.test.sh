@@ -25,8 +25,11 @@ cat > "$C/settings.json" <<'JSON'
   }
 }
 JSON
+chmod 600 "$C/settings.json"
 
-out=$(bash "$FORK/memory-only/install.sh" 2>&1) || { echo "install failed:"; echo "$out"; exit 1; }
+out=$(umask 022 && bash "$FORK/memory-only/install.sh" 2>&1) || { echo "install failed:"; echo "$out"; exit 1; }
+check "a private settings.json stays private" "[ \"\$(ls -l '$C/settings.json' | cut -c1-10)\" = '-rw-------' ]"
+check "no temporary settings file left" "[ -z \"\$(ls '$C' | grep '^settings.json.new')\" ]"
 
 for f in memory-index.sh memory-verify.sh memory-fix.sh memory-provenance.sh \
          hooks/lib.sh hooks/lib/memory-limits.sh hooks/lib/host.sh \

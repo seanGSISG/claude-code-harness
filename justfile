@@ -23,8 +23,21 @@ upstream-diff:
     git fetch -q upstream
     git diff --stat HEAD upstream/main -- {{installed}}
 
-# Merge upstream main into this branch, then run the tests
+# Merge upstream main into this branch, keeping our README and our workflow deletions, then test
 sync:
+    #!/usr/bin/env bash
+    set -euo pipefail
     git fetch -q upstream
-    git merge --no-edit upstream/main
+    git config merge.ours.driver true   # .gitattributes: README.md merge=ours
+    before=$(git rev-parse HEAD)
+    if ! git merge --no-edit upstream/main; then
+      # An upstream change to a workflow we deleted is a modify/delete conflict: keep it deleted.
+      git rm -q --ignore-unmatch .github/workflows/{ci,claude,guard-props-daily,release,upstream-drift}.yml
+      if [ -n "$(git diff --name-only --diff-filter=U)" ]; then
+        echo "sync: resolve the conflicts above, commit, then run just test" >&2; exit 1
+      fi
+      git commit --no-edit -q
+    fi
+    added=$(git diff --name-only --diff-filter=A "$before" HEAD -- .github/workflows)
+    [ -z "$added" ] || echo "sync: upstream added workflows; delete them if we do not need them: $added"
     just test

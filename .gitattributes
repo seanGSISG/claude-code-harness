@@ -1,0 +1,2 @@
+# Keep our README when upstream changes theirs. The driver is set by `just sync`.
+README.md merge=ours
