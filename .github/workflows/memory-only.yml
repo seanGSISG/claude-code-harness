@@ -1,0 +1,24 @@
+# Tests for the memory-only install (memory-only/). Upstream's workflows are
+# left as they are; ci.yml still runs upstream's own suite.
+name: memory-only
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: memory-session-start
+        run: bash memory-only/tests/memory-session-start.test.sh
+      - name: install
+        run: bash memory-only/tests/install.test.sh
+      - name: upstream tests for installed files
+        run: for t in memory-lint memory-index memory-verify memory-fix memory-provenance plan-to-html; do bash tests/$t.test.sh || exit 1; done
